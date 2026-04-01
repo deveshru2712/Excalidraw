@@ -1,10 +1,36 @@
 import { useDrawingStore } from "@/stores/useDrawingStore";
+import { useToolStore } from "@/stores/useToolStore";
+import { applyStrokeStyle } from "@/utils/applyStrokeStyle";
 import { useEffect, useRef } from "react";
 
-export const Canvas = () => {
-  const store = useDrawingStore();
+export default function Canvas() {
+  const drawingStore = useDrawingStore();
+  const toolStore = useToolStore();
   const elements = useDrawingStore((state) => state.elements);
-  const addElementRef = useRef(store.addElement);
+
+  const storeRef = useRef({
+    addElement: drawingStore.addElement,
+    tool: toolStore.tool,
+    strokeColor: toolStore.strokeColor,
+    strokeWidth: toolStore.strokeWidth,
+    strokeStyle: toolStore.strokeStyle,
+  });
+
+  useEffect(() => {
+    storeRef.current = {
+      addElement: drawingStore.addElement,
+      tool: toolStore.tool,
+      strokeColor: toolStore.strokeColor,
+      strokeWidth: toolStore.strokeWidth,
+      strokeStyle: toolStore.strokeStyle,
+    };
+  }, [
+    drawingStore.addElement,
+    toolStore.tool,
+    toolStore.strokeColor,
+    toolStore.strokeWidth,
+    toolStore.strokeStyle,
+  ]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -12,10 +38,6 @@ export const Canvas = () => {
   const currentPoints = useRef<Point[]>([]);
   const lastPoint = useRef({ x: 0, y: 0 });
   const lastMid = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    addElementRef.current = store.addElement;
-  }, [store.addElement]);
 
   function getCoords(e: MouseEvent) {
     const canvas = canvasRef.current!;
@@ -25,7 +47,7 @@ export const Canvas = () => {
       y: e.clientY - rect.top,
     };
   }
-
+  //setting up the canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -43,7 +65,7 @@ export const Canvas = () => {
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = "red";
+    ctx.strokeStyle = "black";
     ctxRef.current = ctx;
   }, []);
 
@@ -65,6 +87,7 @@ export const Canvas = () => {
       if (!ctx) return;
 
       const { x, y } = getCoords(e);
+      const { strokeColor, strokeWidth, strokeStyle } = storeRef.current;
 
       const currentMid = {
         x: (lastPoint.current.x + x) / 2,
@@ -72,6 +95,11 @@ export const Canvas = () => {
       };
 
       ctx.beginPath();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = strokeWidth;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      applyStrokeStyle(ctx, strokeStyle, strokeWidth);
       ctx.moveTo(lastMid.current.x, lastMid.current.y);
       ctx.quadraticCurveTo(
         lastPoint.current.x,
@@ -91,11 +119,15 @@ export const Canvas = () => {
 
       if (currentPoints.current.length === 0) return;
 
-      addElementRef.current({
-        type: "pencil",
+      const { addElement, tool, strokeColor, strokeWidth, strokeStyle } =
+        storeRef.current;
+
+      addElement({
+        type: tool,
         points: currentPoints.current,
-        strokeColor: "red",
-        strokeWidth: 2,
+        strokeColor,
+        strokeWidth,
+        strokeStyle,
       });
 
       currentPoints.current = [];
@@ -128,6 +160,9 @@ export const Canvas = () => {
         ctx.beginPath();
         ctx.strokeStyle = element.strokeColor;
         ctx.lineWidth = element.strokeWidth;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        applyStrokeStyle(ctx, element.strokeStyle, element.strokeWidth);
 
         ctx.moveTo(points[0].x, points[0].y);
 
@@ -146,9 +181,12 @@ export const Canvas = () => {
 
         ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
         ctx.stroke();
+        ctx.setLineDash([]);
       }
     });
   }, [elements]);
 
-  return <canvas ref={canvasRef} className="fixed z-0 bg-neutral-100" />;
-};
+  return (
+    <canvas ref={canvasRef} className="fixed z-0 cursor-none bg-neutral-100" />
+  );
+}
