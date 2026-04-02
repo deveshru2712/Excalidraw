@@ -3,7 +3,7 @@ function GetElementToErase(
   elements: DrawingElement[],
   eraserX: number,
   eraserY: number,
-  eraserRadius: number,
+  eraserRadius: number
 ): string[] {
   const res: string[] = [];
   for (let i = 0; i < elements.length; i++) {
@@ -27,7 +27,7 @@ function GetElementToErase(
       for (let j = 0; j < elem.points.length; j++) {
         const point = elem.points[j];
         const isContacted = Math.sqrt(
-          (point.x - eraserX) ** 2 + (point.y - eraserY) ** 2,
+          (point.x - eraserX) ** 2 + (point.y - eraserY) ** 2
         );
         if (isContacted < eraserRadius) {
           res.push(elements[i].id);

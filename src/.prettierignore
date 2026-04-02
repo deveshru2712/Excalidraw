@@ -122,3 +122,6 @@ bun.lock
 
 # Migration files
 prisma/migrations/
+
+# shadcn components
+src/components/ui/**

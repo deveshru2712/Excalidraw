@@ -1,8 +1,8 @@
 import Canvas from "@/components/Canvas";
-import UtilsMenu from "@/components/UtilsMenu";
-import ToolsMenu from "@/components/ToolMenu";
 import CursorOverlay from "@/components/CursorOverlay";
+import ToolsMenu from "@/components/ToolMenu";
 import ToolSettingMenu from "@/components/ToolSettingMenu";
+import UtilsMenu from "@/components/UtilsMenu";
 
 function App() {
   return (

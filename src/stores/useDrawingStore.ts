@@ -35,7 +35,7 @@ export const useDrawingStore = create<DrawingStoreType>()(
       removeElements: (elementId) => {
         const prev = get().elements;
         const current = get().elements.filter(
-          (elem) => !elementId.includes(elem.id),
+          (elem) => !elementId.includes(elem.id)
         );
         set({
           elements: current,
@@ -69,6 +69,6 @@ export const useDrawingStore = create<DrawingStoreType>()(
     {
       name: "drawing-store",
       partialize: (state) => ({ elements: state.elements }),
-    },
-  ),
+    }
+  )
 );

@@ -1,8 +1,9 @@
+import { useEffect } from "react";
+
 import { Eraser, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
 import { useToolStore } from "@/stores/useToolStore";
 
 const Tools = [

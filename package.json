@@ -7,11 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "next lint",
-    "lint:fix": "next lint --fix",
+    "format": "prettier --ignore-path .prettierignore --write \"**/*.{ts,tsx,js,jsx,json,md,mdx,css,scss}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,mdx,css,scss}\"",
     "lint-staged": "lint-staged",
-    "prepare": "husky",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "prepare": "husky install",
     "preview": "vite preview"
   },
   "dependencies": {

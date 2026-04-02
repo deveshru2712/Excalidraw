@@ -1,7 +1,7 @@
 function ApplyStrokeStyle(
   ctx: CanvasRenderingContext2D,
   style: string,
-  width: number,
+  width: number
 ) {
   if (style === "solid") {
     ctx.setLineDash([]);

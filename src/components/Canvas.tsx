@@ -1,8 +1,8 @@
+import { useEffect, useRef } from "react";
+
 import { useDrawingStore } from "@/stores/useDrawingStore";
 import { useToolStore } from "@/stores/useToolStore";
 import applyStrokeStyle from "@/utils/ApplyStrokeStyle";
-import { useEffect, useRef } from "react";
-
 import GetElementsToErase from "@/utils/GetElementToErase";
 
 export default function Canvas() {
@@ -48,7 +48,7 @@ export default function Canvas() {
             points[i].x,
             points[i].y,
             currentMid.x,
-            currentMid.y,
+            currentMid.y
           );
         }
 
@@ -171,7 +171,7 @@ export default function Canvas() {
           storeRef.current.elements,
           x,
           y,
-          strokeWidth * 3,
+          strokeWidth * 3
         );
         list.forEach((id) => erasedIdsRef.current.add(id));
         redraw(erasedIdsRef.current);
@@ -239,7 +239,7 @@ export default function Canvas() {
           lastPoint.current.x,
           lastPoint.current.y,
           currentMid.x,
-          currentMid.y,
+          currentMid.y
         );
         ctx.stroke();
 
@@ -252,7 +252,7 @@ export default function Canvas() {
           storeRef.current.elements,
           x,
           y,
-          strokeWidth * 3,
+          strokeWidth * 3
         );
         list.forEach((id) => erasedIdsRef.current.add(id));
         redraw(erasedIdsRef.current);
