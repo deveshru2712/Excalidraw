@@ -12,6 +12,8 @@ interface DrawingStoreAction {
   removeElements: (elementIds: string[]) => void;
   undo: () => void;
   redo: () => void;
+  updateElement: (elementIds: string, x: number, y: number) => void;
+  pushToUndoStack: (elements: DrawingElement[]) => void;
 }
 
 type DrawingStoreType = DrawingStoreState & DrawingStoreAction;
@@ -64,6 +66,19 @@ export const useDrawingStore = create<DrawingStoreType>()(
           redoStack: redoStack.slice(0, -1),
           undoStack: [...undoStack, elements],
         });
+      },
+      updateElement: (id, x, y) => {
+        const previous = get().elements;
+        const current = previous.map((elem) =>
+          elem.id == id && elem.type === "text"
+            ? { ...elem, point: { x, y } }
+            : { ...elem }
+        );
+        set({ elements: current });
+      },
+      pushToUndoStack: (stack) => {
+        const undostack = get().undoStack;
+        set({ undoStack: [...undostack, stack] });
       },
     }),
     {

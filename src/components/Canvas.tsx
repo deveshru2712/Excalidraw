@@ -16,6 +16,9 @@ export default function Canvas() {
   const activeInputRef = useRef<HTMLInputElement | null>(null);
   const activeInputPositionRef = useRef<Point>({ x: 0, y: 0 });
 
+  const draggedElementIdRef = useRef<string | null>(null);
+  const draggedElementSnapShotRef = useRef<Point>({ x: 0, y: 0 });
+
   function redraw(skipIds: Set<string> = new Set()) {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
@@ -69,6 +72,8 @@ export default function Canvas() {
     elements: drawingStore.elements,
     addElement: drawingStore.addElement,
     removeElement: drawingStore.removeElements,
+    updateElement: drawingStore.updateElement,
+    pushToUndoStack: drawingStore.pushToUndoStack,
     strokeColor: toolStore.strokeColor,
     strokeWidth: toolStore.strokeWidth,
     strokeStyle: toolStore.strokeStyle,
@@ -101,6 +106,8 @@ export default function Canvas() {
       elements: drawingStore.elements,
       addElement: drawingStore.addElement,
       removeElement: drawingStore.removeElements,
+      updateElement: drawingStore.updateElement,
+      pushToUndoStack: drawingStore.pushToUndoStack,
       strokeColor: toolStore.strokeColor,
       strokeWidth: toolStore.strokeWidth,
       strokeStyle: toolStore.strokeStyle,
@@ -111,6 +118,8 @@ export default function Canvas() {
     drawingStore.elements,
     drawingStore.addElement,
     drawingStore.removeElements,
+    drawingStore.updateElement,
+    drawingStore.pushToUndoStack,
     toolStore.strokeColor,
     toolStore.strokeWidth,
     toolStore.strokeStyle,
@@ -222,11 +231,13 @@ export default function Canvas() {
           y,
           threshold
         );
-        if (point) {
-          console.log(point);
-        } else {
-          console.log("wasted");
-        }
+
+        // saving the dragged element id
+        draggedElementIdRef.current = point;
+        // saving the dragged element snapshot
+        draggedElementSnapShotRef.current = { x, y };
+        // updating the undo history
+        storeRef.current.pushToUndoStack(storeRef.current.elements);
       }
     };
 
@@ -271,6 +282,26 @@ export default function Canvas() {
         );
         list.forEach((id) => erasedIdsRef.current.add(id));
         redraw(erasedIdsRef.current);
+      } else if (tool === "grab") {
+        // meaning none element is selected
+        if (!draggedElementIdRef.current) return;
+
+        // if the element is selected
+
+        const delta: Point = { x: 0, y: 0 };
+        delta.x = x - draggedElementSnapShotRef.current.x;
+        delta.y = y - draggedElementSnapShotRef.current.y;
+
+        // calling the udpate function
+        storeRef.current.updateElement(
+          draggedElementIdRef.current,
+          x + delta.x,
+          y + delta.y
+        );
+
+        // updating the co ordinates
+        draggedElementSnapShotRef.current.x = x;
+        draggedElementSnapShotRef.current.y = y;
       }
     };
 
@@ -301,6 +332,10 @@ export default function Canvas() {
           strokeStyle,
         });
         currentPoints.current = [];
+      } else if (tool === "grab") {
+        // resetting the dragged element
+        draggedElementIdRef.current = null;
+        draggedElementSnapShotRef.current = { x: 0, y: 0 };
       }
     };
 

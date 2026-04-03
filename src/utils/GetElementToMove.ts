@@ -1,8 +1,8 @@
 function GetElementToMove(
   ctx: CanvasRenderingContext2D,
   elements: DrawingElement[],
-  eraserX: number,
-  eraserY: number,
+  mouseX: number,
+  mouseY: number,
   threshold: number
 ): string | null {
   for (let i = 0; i < elements.length; i++) {
@@ -14,10 +14,10 @@ function GetElementToMove(
       const textWidth = ctx.measureText(textElement.content).width;
 
       const isInside =
-        textElement.point.x < eraserX &&
-        eraserX < textElement.point.x + textWidth &&
-        textElement.point.y - textElement.fontSize < eraserY &&
-        eraserY < textElement.point.y;
+        textElement.point.x < mouseX &&
+        mouseX < textElement.point.x + textWidth &&
+        textElement.point.y - textElement.fontSize < mouseY &&
+        mouseY < textElement.point.y;
 
       if (isInside) {
         return textElement.id;
@@ -31,8 +31,8 @@ function GetElementToMove(
         const pointB = pencilElement.points[j - 1];
 
         const numerator =
-          (eraserX - pointA.x) * (pointB.x - pointA.x) +
-          (eraserY - pointA.y) * (pointB.y - pointA.y);
+          (mouseX - pointA.x) * (pointB.x - pointA.x) +
+          (mouseY - pointA.y) * (pointB.y - pointA.y);
 
         const denominator =
           (pointB.x - pointA.x) ** 2 + (pointB.y - pointA.y) ** 2;
@@ -51,8 +51,7 @@ function GetElementToMove(
         };
 
         const distance = Math.sqrt(
-          (projectionPoint.x - eraserX) ** 2 +
-            (projectionPoint.y - eraserY) ** 2
+          (projectionPoint.x - mouseX) ** 2 + (projectionPoint.y - mouseY) ** 2
         );
 
         if (distance <= threshold) {
