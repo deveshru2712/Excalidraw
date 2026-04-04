@@ -60,6 +60,15 @@ function GetElementToMove(
       ) {
         return elem.id;
       }
+    } else if (element.type === "circle") {
+      const elem = elements[i] as CircleElement;
+      const distanceToCenter = Math.sqrt(
+        (mouseX - elem.center.x) ** 2 + (mouseY - elem.center.y) ** 2
+      );
+
+      if (Math.abs(distanceToCenter - elem.radius) <= threshold) {
+        return elem.id;
+      }
     } else {
       // Handle pencil element
       const pencilElement = element as PencilElement;
