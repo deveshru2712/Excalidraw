@@ -71,7 +71,7 @@ export const useDrawingStore = create<DrawingStoreType>()(
         const previous = get().elements;
         const current = previous.map((elem) =>
           elem.id == id
-            ? elem.type === "text" || elem.type === "shape"
+            ? elem.type === "text" || elem.type === "rectangle"
               ? {
                   ...elem,
                   point: {
@@ -79,13 +79,21 @@ export const useDrawingStore = create<DrawingStoreType>()(
                     y: elem.point.y + offsetY,
                   },
                 }
-              : {
-                  ...elem,
-                  points: elem.points.map((p) => ({
-                    x: p.x + offsetX,
-                    y: p.y + offsetY,
-                  })),
-                }
+              : elem.type === "circle"
+                ? {
+                    ...elem,
+                    center: {
+                      x: elem.center.x + offsetX,
+                      y: elem.center.y + offsetY,
+                    },
+                  }
+                : {
+                    ...elem,
+                    points: elem.points.map((p) => ({
+                      x: p.x + offsetX,
+                      y: p.y + offsetY,
+                    })),
+                  }
             : { ...elem }
         );
         set({ elements: current });

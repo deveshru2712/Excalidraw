@@ -24,8 +24,8 @@ function GetElementToMove(
       if (isInside) {
         return textElement.id;
       }
-    } else if (element.type === "shape") {
-      // for shapes
+    } else if (element.type === "rectangle") {
+      // for rectangle
       const elem = elements[i] as RectangelElement;
 
       if (

@@ -22,8 +22,8 @@ function GetElementToErase(
       ) {
         res.push(elem.id);
       }
-    } else if (elements[i].type === "shape") {
-      // for shapes
+    } else if (elements[i].type === "rectangle") {
+      // for rectangle
       const elem = elements[i] as RectangelElement;
 
       if (

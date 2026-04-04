@@ -25,7 +25,7 @@ interface TextElement {
 
 interface RectangelElement {
   id: string;
-  type: "shape";
+  type: "rectangle";
   point: Point;
   height: number;
   width: number;
@@ -34,4 +34,18 @@ interface RectangelElement {
   strokeDash: string;
 }
 
-type DrawingElement = PencilElement | TextElement | RectangelElement;
+interface CircleElement {
+  id: string;
+  type: "circle";
+  center: Point;
+  radius: number;
+  strokeColor: string;
+  strokeWidth: number;
+  strokeDash: string;
+}
+
+type DrawingElement =
+  | PencilElement
+  | TextElement
+  | RectangelElement
+  | CircleElement;

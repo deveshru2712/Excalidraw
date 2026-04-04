@@ -68,7 +68,7 @@ export default function Canvas() {
         ctx.font = `${element.fontSize}px 'Shantell Sans'`;
         ctx.fillStyle = element.strokeColor;
         ctx.fillText(element.content, element.point.x, element.point.y);
-      } else if (element.type === "shape") {
+      } else if (element.type === "rectangle") {
         ctx.strokeStyle = element.strokeColor;
         ctx.lineWidth = element.strokeWidth;
         ApplyDashedStyle(ctx, element.strokeDash, element.strokeWidth);
@@ -381,7 +381,7 @@ export default function Canvas() {
         // calling the add  function to add the rectangle to update
         addElement({
           id: crypto.randomUUID(),
-          type: "shape",
+          type: "rectangle",
           point: {
             x: rectangelElementSnapShotRef.current.x,
             y: rectangelElementSnapShotRef.current.y,
