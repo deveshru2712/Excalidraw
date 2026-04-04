@@ -58,6 +58,16 @@ function GetElementToErase(
       ) {
         res.push(elem.id);
       }
+    } else if (elements[i].type === "circle") {
+      // for circle element
+      const elem = elements[i] as CircleElement;
+      const distanceToCenter = Math.sqrt(
+        (eraserX - elem.center.x) ** 2 + (eraserY - elem.center.y) ** 2
+      );
+
+      if (Math.abs(distanceToCenter - elem.radius) <= eraserRadius) {
+        res.push(elem.id);
+      }
     } else {
       // for free hand element
       const elem = elements[i] as PencilElement;
