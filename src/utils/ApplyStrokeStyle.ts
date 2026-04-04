@@ -1,4 +1,4 @@
-function ApplyStrokeStyle(
+function ApplyDashedStyle(
   ctx: CanvasRenderingContext2D,
   style: string,
   width: number
@@ -12,4 +12,4 @@ function ApplyStrokeStyle(
   }
 }
 
-export default ApplyStrokeStyle;
+export default ApplyDashedStyle;

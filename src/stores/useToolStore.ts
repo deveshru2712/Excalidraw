@@ -4,7 +4,7 @@ interface toolsStoreState {
   tool: Tool;
   strokeWidth: number;
   strokeColor: string;
-  strokeStyle: string;
+  strokeDash: string;
   fontSize: number;
 }
 
@@ -22,12 +22,12 @@ export const useToolStore = create<toolStoreType>((set) => ({
   tool: "pencil",
   strokeWidth: 4,
   strokeColor: "black",
-  strokeStyle: "solid",
+  strokeDash: "solid",
   fontSize: 12,
   setTool: (tool) => set({ tool }),
   setStrokeWidth: (width) => set({ strokeWidth: width }),
   setStrokeColor: (color) => set({ strokeColor: color }),
-  setStrokeStyle: (style) => set({ strokeStyle: style }),
+  setStrokeStyle: (style) => set({ strokeDash: style }),
   setFontSize: (size) => {
     set({ fontSize: size });
   },

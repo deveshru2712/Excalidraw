@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { useDrawingStore } from "@/stores/useDrawingStore";
 import { useToolStore } from "@/stores/useToolStore";
-import applyStrokeStyle from "@/utils/ApplyStrokeStyle";
+import ApplyDashedStyle from "@/utils/ApplyStrokeStyle";
 import GetElementsToErase from "@/utils/GetElementToErase";
 import GetElementToMove from "@/utils/GetElementToMove";
 
@@ -13,11 +13,16 @@ export default function Canvas() {
 
   const erasedIdsRef = useRef<Set<string>>(new Set());
 
+  // for text element
   const activeInputRef = useRef<HTMLInputElement | null>(null);
   const activeInputPositionRef = useRef<Point>({ x: 0, y: 0 });
 
+  // for drage and move
   const draggedElementIdRef = useRef<string | null>(null);
   const draggedElementSnapShotRef = useRef<Point>({ x: 0, y: 0 });
+
+  // for rectangel element
+  const rectangelElementSnapShotRef = useRef<Point>({ x: 0, y: 0 });
 
   function redraw(skipIds: Set<string> = new Set()) {
     const canvas = canvasRef.current;
@@ -39,7 +44,7 @@ export default function Canvas() {
         ctx.lineWidth = element.strokeWidth;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
-        applyStrokeStyle(ctx, element.strokeStyle, element.strokeWidth);
+        ApplyDashedStyle(ctx, element.strokeDash, element.strokeWidth);
 
         ctx.moveTo(points[0].x, points[0].y);
 
@@ -63,6 +68,16 @@ export default function Canvas() {
         ctx.font = `${element.fontSize}px 'Shantell Sans'`;
         ctx.fillStyle = element.strokeColor;
         ctx.fillText(element.content, element.point.x, element.point.y);
+      } else if (element.type === "shape") {
+        ctx.strokeStyle = element.strokeColor;
+        ctx.lineWidth = element.strokeWidth;
+        ApplyDashedStyle(ctx, element.strokeDash, element.strokeWidth);
+        ctx.strokeRect(
+          element.point.x,
+          element.point.y,
+          element.width,
+          element.height
+        );
       }
     });
   }
@@ -76,7 +91,7 @@ export default function Canvas() {
     pushToUndoStack: drawingStore.pushToUndoStack,
     strokeColor: toolStore.strokeColor,
     strokeWidth: toolStore.strokeWidth,
-    strokeStyle: toolStore.strokeStyle,
+    strokeDash: toolStore.strokeDash,
     fontSize: toolStore.fontSize,
   });
 
@@ -110,7 +125,7 @@ export default function Canvas() {
       pushToUndoStack: drawingStore.pushToUndoStack,
       strokeColor: toolStore.strokeColor,
       strokeWidth: toolStore.strokeWidth,
-      strokeStyle: toolStore.strokeStyle,
+      strokeDash: toolStore.strokeDash,
       fontSize: toolStore.fontSize,
     };
   }, [
@@ -122,7 +137,7 @@ export default function Canvas() {
     drawingStore.pushToUndoStack,
     toolStore.strokeColor,
     toolStore.strokeWidth,
-    toolStore.strokeStyle,
+    toolStore.strokeDash,
     toolStore.fontSize,
   ]);
 
@@ -238,6 +253,10 @@ export default function Canvas() {
         draggedElementSnapShotRef.current = { x, y };
         // updating the undo history
         storeRef.current.pushToUndoStack(storeRef.current.elements);
+      } else if (tool === "rectangle") {
+        // saving snapshot for rectangle element
+        rectangelElementSnapShotRef.current.x = x;
+        rectangelElementSnapShotRef.current.y = y;
       }
     };
 
@@ -247,7 +266,7 @@ export default function Canvas() {
       if (!ctx) return;
 
       const { x, y } = getCoords(e);
-      const { tool, strokeColor, strokeWidth, strokeStyle } = storeRef.current;
+      const { tool, strokeColor, strokeWidth, strokeDash } = storeRef.current;
       if (tool === "pencil") {
         const currentMid = {
           x: (lastPoint.current.x + x) / 2,
@@ -259,7 +278,7 @@ export default function Canvas() {
         ctx.lineWidth = strokeWidth;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
-        applyStrokeStyle(ctx, strokeStyle, strokeWidth);
+        ApplyDashedStyle(ctx, strokeDash, strokeWidth);
         ctx.moveTo(lastMid.current.x, lastMid.current.y);
         ctx.quadraticCurveTo(
           lastPoint.current.x,
@@ -302,10 +321,32 @@ export default function Canvas() {
         // updating the co ordinates
         draggedElementSnapShotRef.current.x = x;
         draggedElementSnapShotRef.current.y = y;
+      } else if (tool === "rectangle") {
+        if (!ctxRef.current) return;
+        const w = x - rectangelElementSnapShotRef.current.x;
+        const h = y - rectangelElementSnapShotRef.current.y;
+
+        // drawing the reactangle
+        redraw();
+        ctx.strokeStyle = storeRef.current.strokeColor;
+        ctx.lineWidth = storeRef.current.strokeWidth;
+        ApplyDashedStyle(
+          ctx,
+          storeRef.current.strokeDash,
+          storeRef.current.strokeWidth
+        );
+        ctxRef.current.strokeRect(
+          rectangelElementSnapShotRef.current.x,
+          rectangelElementSnapShotRef.current.y,
+          w,
+          h
+        );
       }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
+      if (!isActive.current) return;
+      const { x, y } = getCoords(e);
       isActive.current = false;
       const {
         tool,
@@ -313,7 +354,7 @@ export default function Canvas() {
         removeElement,
         strokeColor,
         strokeWidth,
-        strokeStyle,
+        strokeDash,
       } = storeRef.current;
 
       if (tool === "eraser") {
@@ -329,13 +370,31 @@ export default function Canvas() {
           points: currentPoints.current,
           strokeColor,
           strokeWidth,
-          strokeStyle,
+          strokeDash,
         });
         currentPoints.current = [];
       } else if (tool === "drag") {
         // resetting the dragged element
         draggedElementIdRef.current = null;
         draggedElementSnapShotRef.current = { x: 0, y: 0 };
+      } else if (tool === "rectangle") {
+        // calling the add  function to add the rectangle to update
+        addElement({
+          id: crypto.randomUUID(),
+          type: "shape",
+          point: {
+            x: rectangelElementSnapShotRef.current.x,
+            y: rectangelElementSnapShotRef.current.y,
+          },
+          height: y - rectangelElementSnapShotRef.current.y,
+          width: x - rectangelElementSnapShotRef.current.x,
+          strokeColor,
+          strokeWidth,
+          strokeDash,
+        });
+        // reseting the rectangle snapshot
+        rectangelElementSnapShotRef.current.x = 0;
+        rectangelElementSnapShotRef.current.y = 0;
       }
     };
 

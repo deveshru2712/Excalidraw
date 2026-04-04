@@ -71,7 +71,7 @@ export const useDrawingStore = create<DrawingStoreType>()(
         const previous = get().elements;
         const current = previous.map((elem) =>
           elem.id == id
-            ? elem.type === "text"
+            ? elem.type === "text" || elem.type === "shape"
               ? {
                   ...elem,
                   point: {

@@ -11,7 +11,7 @@ interface PencilElement {
   points: Point[];
   strokeColor: string;
   strokeWidth: number;
-  strokeStyle: string;
+  strokeDash: string;
 }
 
 interface TextElement {
@@ -23,4 +23,15 @@ interface TextElement {
   content: string;
 }
 
-type DrawingElement = PencilElement | TextElement;
+interface RectangelElement {
+  id: string;
+  type: "shape";
+  point: Point;
+  height: number;
+  width: number;
+  strokeColor: string;
+  strokeWidth: number;
+  strokeDash: string;
+}
+
+type DrawingElement = PencilElement | TextElement | RectangelElement;

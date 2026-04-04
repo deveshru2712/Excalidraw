@@ -11,7 +11,7 @@ const strokeSettingConfig = {
       { id: 2, value: 4, icon: <Minus strokeWidth={3} className="size-4" /> },
       { id: 3, value: 7, icon: <Minus strokeWidth={5} className="size-4" /> },
     ],
-    strokeStyle: [
+    strokeDash: [
       {
         id: 1,
         value: "solid" as const,
@@ -99,8 +99,140 @@ const strokeSettingConfig = {
     ],
   },
   drag: {},
-  rectangle: {},
-  circle: {},
+  rectangle: {
+    stroke: ["black", "red", "green", "blue", "yellow"],
+    strokeWidth: [
+      { id: 1, value: 2, icon: <Minus strokeWidth={1} className="size-4" /> },
+      { id: 2, value: 4, icon: <Minus strokeWidth={3} className="size-4" /> },
+      { id: 3, value: 7, icon: <Minus strokeWidth={5} className="size-4" /> },
+    ],
+    strokeDash: [
+      {
+        id: 1,
+        value: "solid" as const,
+        icon: <Minus strokeWidth={1} className="size-4" />,
+      },
+      {
+        id: 2,
+        value: "dashed" as const,
+        icon: (
+          <svg
+            aria-hidden="true"
+            focusable="false"
+            role="img"
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            strokeWidth="2"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <g strokeWidth="2">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M5 12h2"></path>
+              <path d="M17 12h2"></path>
+              <path d="M11 12h2"></path>
+            </g>
+          </svg>
+        ),
+      },
+      {
+        id: 3,
+        value: "dotted" as const,
+        icon: (
+          <svg
+            aria-hidden="true"
+            focusable="false"
+            role="img"
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            strokeWidth="2"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <g strokeWidth="2">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M4 12v.01"></path>
+              <path d="M8 12v.01"></path>
+              <path d="M12 12v.01"></path>
+              <path d="M16 12v.01"></path>
+              <path d="M20 12v.01"></path>
+            </g>
+          </svg>
+        ),
+      },
+    ],
+  },
+  circle: {
+    stroke: ["black", "red", "green", "blue", "yellow"],
+    strokeWidth: [
+      { id: 1, value: 2, icon: <Minus strokeWidth={1} className="size-4" /> },
+      { id: 2, value: 4, icon: <Minus strokeWidth={3} className="size-4" /> },
+      { id: 3, value: 7, icon: <Minus strokeWidth={5} className="size-4" /> },
+    ],
+    strokeDash: [
+      {
+        id: 1,
+        value: "solid" as const,
+        icon: <Minus strokeWidth={1} className="size-4" />,
+      },
+      {
+        id: 2,
+        value: "dashed" as const,
+        icon: (
+          <svg
+            aria-hidden="true"
+            focusable="false"
+            role="img"
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            strokeWidth="2"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <g strokeWidth="2">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M5 12h2"></path>
+              <path d="M17 12h2"></path>
+              <path d="M11 12h2"></path>
+            </g>
+          </svg>
+        ),
+      },
+      {
+        id: 3,
+        value: "dotted" as const,
+        icon: (
+          <svg
+            aria-hidden="true"
+            focusable="false"
+            role="img"
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            strokeWidth="2"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <g strokeWidth="2">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M4 12v.01"></path>
+              <path d="M8 12v.01"></path>
+              <path d="M12 12v.01"></path>
+              <path d="M16 12v.01"></path>
+              <path d="M20 12v.01"></path>
+            </g>
+          </svg>
+        ),
+      },
+    ],
+  },
 };
 
 export default function ToolSettingMenu() {
@@ -108,7 +240,7 @@ export default function ToolSettingMenu() {
   const fontSize = useToolStore((state) => state.fontSize);
   const strokeColor = useToolStore((state) => state.strokeColor);
   const strokeWidth = useToolStore((state) => state.strokeWidth);
-  const strokeStyle = useToolStore((state) => state.strokeStyle);
+  const strokeDash = useToolStore((state) => state.strokeDash);
   const setStrokeColor = useToolStore((state) => state.setStrokeColor);
   const setStrokeWidth = useToolStore((state) => state.setStrokeWidth);
   const setStrokeStyle = useToolStore((state) => state.setStrokeStyle);
@@ -167,16 +299,16 @@ export default function ToolSettingMenu() {
           </div>
         </div>
 
-        {"strokeStyle" in config && (
+        {"strokeDash" in config && (
           <div className="space-y-1">
             <h4 className="text-[8px]">Stroke style</h4>
             <div className="flex gap-1">
-              {config.strokeStyle.map((style) => (
+              {config.strokeDash.map((style) => (
                 <Button
                   key={style.id}
                   variant="outline"
                   onClick={() => setStrokeStyle(style.value)}
-                  className={`h-7 cursor-pointer rounded-sm px-1.25 ${strokeStyle === style.value ? "bg-accent" : ""}`}
+                  className={`h-7 cursor-pointer rounded-sm px-1.25 ${strokeDash === style.value ? "bg-accent" : ""}`}
                 >
                   <span className="cursor-pointer text-sm">{style.icon}</span>
                 </Button>
