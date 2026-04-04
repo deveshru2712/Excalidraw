@@ -1,3 +1,5 @@
+import isPointNearSegment from "@/utils/pointToSegmentDistance";
+
 function GetElementToMove(
   ctx: CanvasRenderingContext2D,
   elements: DrawingElement[],
@@ -21,6 +23,42 @@ function GetElementToMove(
 
       if (isInside) {
         return textElement.id;
+      }
+    } else if (element.type === "shape") {
+      // for shapes
+      const elem = elements[i] as RectangelElement;
+
+      if (
+        isPointNearSegment(
+          { x: elem.point.x, y: elem.point.y },
+          { x: elem.point.x + elem.width, y: elem.point.y },
+          mouseX,
+          mouseY,
+          threshold
+        ) ||
+        isPointNearSegment(
+          { x: elem.point.x, y: elem.point.y + elem.height },
+          { x: elem.point.x + elem.width, y: elem.point.y + elem.height },
+          mouseX,
+          mouseY,
+          threshold
+        ) ||
+        isPointNearSegment(
+          { x: elem.point.x, y: elem.point.y },
+          { x: elem.point.x, y: elem.point.y + elem.height },
+          mouseX,
+          mouseY,
+          threshold
+        ) ||
+        isPointNearSegment(
+          { x: elem.point.x + elem.width, y: elem.point.y },
+          { x: elem.point.x + elem.width, y: elem.point.y + elem.height },
+          mouseX,
+          mouseY,
+          threshold
+        )
+      ) {
+        return elem.id;
       }
     } else {
       // Handle pencil element
