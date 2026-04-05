@@ -2,14 +2,16 @@ import { useEffect, useRef } from "react";
 
 import { useDrawingStore } from "@/stores/useDrawingStore";
 import { useToolStore } from "@/stores/useToolStore";
-import ApplyDashedStyle from "@/utils/ApplyStrokeStyle";
-import GetElementsToErase from "@/utils/GetElementToErase";
-import GetElementToMove from "@/utils/GetElementToMove";
+import ApplyDashedStyle from "@/utils/applyStrokeStyle";
+import GetElementsToErase from "@/utils/getElementToErase";
+import GetElementToMove from "@/utils/getElementToMove";
+import getPanning from "@/utils/getPanning";
 
 export default function Canvas() {
   const drawingStore = useDrawingStore();
   const toolStore = useToolStore();
   const elements = useDrawingStore((state) => state.elements);
+  const isPanning = useDrawingStore((state) => state.isPanning);
 
   const erasedIdsRef = useRef<Set<string>>(new Set());
 
@@ -114,6 +116,8 @@ export default function Canvas() {
     removeElement: drawingStore.removeElements,
     updateElement: drawingStore.updateElement,
     pushToUndoStack: drawingStore.pushToUndoStack,
+    isPanning: drawingStore.isPanning,
+    setIsPanning: drawingStore.setIsPanning,
     strokeColor: toolStore.strokeColor,
     strokeWidth: toolStore.strokeWidth,
     strokeDash: toolStore.strokeDash,
@@ -148,6 +152,8 @@ export default function Canvas() {
       removeElement: drawingStore.removeElements,
       updateElement: drawingStore.updateElement,
       pushToUndoStack: drawingStore.pushToUndoStack,
+      isPanning: drawingStore.isPanning,
+      setIsPanning: drawingStore.setIsPanning,
       strokeColor: toolStore.strokeColor,
       strokeWidth: toolStore.strokeWidth,
       strokeDash: toolStore.strokeDash,
@@ -160,6 +166,8 @@ export default function Canvas() {
     drawingStore.removeElements,
     drawingStore.updateElement,
     drawingStore.pushToUndoStack,
+    drawingStore.isPanning,
+    drawingStore.setIsPanning,
     toolStore.strokeColor,
     toolStore.strokeWidth,
     toolStore.strokeDash,
@@ -172,6 +180,20 @@ export default function Canvas() {
   const currentPoints = useRef<Point[]>([]);
   const lastPoint = useRef({ x: 0, y: 0 });
   const lastMid = useRef({ x: 0, y: 0 });
+
+  function focusContent() {
+    if (!isPanning) return;
+    if (!ctxRef.current || !canvasRef.current) return;
+
+    const res = getPanning(ctxRef.current, storeRef.current.elements);
+    const centerX = (res.minX + res.maxX) / 2;
+    const centerY = (res.minY + res.maxY) / 2;
+
+    panningOffset.current.x = window.innerWidth / 2 - centerX;
+    panningOffset.current.y = window.innerHeight / 2 - centerY;
+    redraw();
+    storeRef.current.setIsPanning(false);
+  }
 
   // helper func to get current coordinate
   function getCoords(e: MouseEvent) {
@@ -511,6 +533,10 @@ export default function Canvas() {
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
+
+  useEffect(() => {
+    focusContent();
+  }, [isPanning]);
 
   useEffect(() => {
     redraw();

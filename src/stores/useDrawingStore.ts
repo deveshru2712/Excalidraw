@@ -5,6 +5,7 @@ interface DrawingStoreState {
   elements: DrawingElement[];
   undoStack: DrawingElement[][];
   redoStack: DrawingElement[][];
+  isPanning: boolean;
 }
 
 interface DrawingStoreAction {
@@ -14,6 +15,7 @@ interface DrawingStoreAction {
   redo: () => void;
   updateElement: (elementIds: string, offsetX: number, offsetY: number) => void;
   pushToUndoStack: (elements: DrawingElement[]) => void;
+  setIsPanning: (isPanning: boolean) => void;
 }
 
 type DrawingStoreType = DrawingStoreState & DrawingStoreAction;
@@ -24,7 +26,11 @@ export const useDrawingStore = create<DrawingStoreType>()(
       elements: [],
       undoStack: [],
       redoStack: [],
+      isPanning: false,
 
+      setIsPanning: (isPanning) => {
+        set({ isPanning });
+      },
       addElement: (element) => {
         const previous = get().elements;
         set({
