@@ -6,6 +6,8 @@ interface DrawingStoreState {
   undoStack: DrawingElement[][];
   redoStack: DrawingElement[][];
   isPanning: boolean;
+  zoomLevel: number;
+  zoomDirection: "in" | "out" | null;
 }
 
 interface DrawingStoreAction {
@@ -16,6 +18,8 @@ interface DrawingStoreAction {
   updateElement: (elementIds: string, offsetX: number, offsetY: number) => void;
   pushToUndoStack: (elements: DrawingElement[]) => void;
   setIsPanning: (isPanning: boolean) => void;
+  setZoomLevel: (level: number) => void;
+  setZoomDirection: (dir: "in" | "out" | null) => void;
 }
 
 type DrawingStoreType = DrawingStoreState & DrawingStoreAction;
@@ -27,7 +31,10 @@ export const useDrawingStore = create<DrawingStoreType>()(
       undoStack: [],
       redoStack: [],
       isPanning: false,
-
+      zoomDirection: null,
+      zoomLevel: 1,
+      setZoomDirection: (dir) => set({ zoomDirection: dir }),
+      setZoomLevel: (lvl) => set({ zoomLevel: lvl }),
       setIsPanning: (isPanning) => {
         set({ isPanning });
       },

@@ -12,6 +12,7 @@ export default function Canvas() {
   const toolStore = useToolStore();
   const elements = useDrawingStore((state) => state.elements);
   const isPanning = useDrawingStore((state) => state.isPanning);
+  const zoomDirection = useDrawingStore((state) => state.zoomDirection);
 
   const erasedIdsRef = useRef<Set<string>>(new Set());
 
@@ -33,6 +34,23 @@ export default function Canvas() {
   const lastPanningSnapShot = useRef<Point>({ x: 0, y: 0 });
   const panningOffset = useRef<Point>({ x: 0, y: 0 });
 
+  // for zooming
+  const zoomLevelRef = useRef<number>(1);
+
+  useEffect(() => {
+    if (!zoomDirection) return;
+
+    if (zoomDirection === "in") {
+      zoomLevelRef.current = Math.min(5, zoomLevelRef.current + 0.1);
+    } else {
+      zoomLevelRef.current = Math.max(0.1, zoomLevelRef.current - 0.1);
+    }
+
+    drawingStore.setZoomLevel(zoomLevelRef.current);
+    redraw();
+    drawingStore.setZoomDirection(null);
+  }, [zoomDirection]);
+
   function redraw(skipIds: Set<string> = new Set()) {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
@@ -43,6 +61,8 @@ export default function Canvas() {
     // saving the current state
     ctx.save();
     ctx.translate(panningOffset.current.x, panningOffset.current.y);
+    // for zooming
+    ctx.scale(zoomLevelRef.current, zoomLevelRef.current);
 
     storeRef.current.elements.forEach((element) => {
       if (skipIds.has(element.id)) return;
@@ -236,18 +256,20 @@ export default function Canvas() {
     const handleMouseDown = (e: MouseEvent) => {
       const { x, y } = getCoords(e);
 
-      const wx = x - panningOffset.current.x;
-      const wy = y - panningOffset.current.y;
+      const wx = (x - panningOffset.current.x) / zoomLevelRef.current;
+      const wy = (y - panningOffset.current.y) / zoomLevelRef.current;
 
       isActive.current = true;
       const { tool, strokeWidth, strokeColor, addElement } = storeRef.current;
 
       if (tool === "eraser") {
+        const Ex = (x - panningOffset.current.x) / zoomLevelRef.current;
+        const Ey = (y - panningOffset.current.y) / zoomLevelRef.current;
         const list = GetElementsToErase(
           ctxRef.current!,
           storeRef.current.elements,
-          wx,
-          wy,
+          Ex,
+          Ey,
           strokeWidth * 3
         );
         list.forEach((id) => erasedIdsRef.current.add(id));
@@ -325,8 +347,8 @@ export default function Canvas() {
 
       const { x, y } = getCoords(e);
 
-      const wx = x - panningOffset.current.x;
-      const wy = y - panningOffset.current.y;
+      const wx = (x - panningOffset.current.x) / zoomLevelRef.current;
+      const wy = (y - panningOffset.current.y) / zoomLevelRef.current;
 
       const { tool, strokeColor, strokeWidth, strokeDash } = storeRef.current;
       if (tool === "pencil") {
@@ -342,14 +364,14 @@ export default function Canvas() {
         ctx.lineJoin = "round";
         ApplyDashedStyle(ctx, strokeDash, strokeWidth);
         ctx.moveTo(
-          lastMid.current.x + panningOffset.current.x,
-          lastMid.current.y + panningOffset.current.y
+          lastMid.current.x * zoomLevelRef.current + panningOffset.current.x,
+          lastMid.current.y * zoomLevelRef.current + panningOffset.current.y
         );
         ctx.quadraticCurveTo(
-          lastPoint.current.x + panningOffset.current.x,
-          lastPoint.current.y + panningOffset.current.y,
-          currentMid.x + panningOffset.current.x,
-          currentMid.y + panningOffset.current.y
+          lastPoint.current.x * zoomLevelRef.current + panningOffset.current.x,
+          lastPoint.current.y * zoomLevelRef.current + panningOffset.current.y,
+          currentMid.x * zoomLevelRef.current + panningOffset.current.x,
+          currentMid.y * zoomLevelRef.current + panningOffset.current.y
         );
         ctx.stroke();
 
@@ -357,11 +379,13 @@ export default function Canvas() {
         lastPoint.current = { x: wx, y: wy };
         currentPoints.current.push({ x: wx, y: wy });
       } else if (tool === "eraser") {
+        const Ex = (x - panningOffset.current.x) / zoomLevelRef.current;
+        const Ey = (y - panningOffset.current.y) / zoomLevelRef.current;
         const list = GetElementsToErase(
           ctxRef.current!,
           storeRef.current.elements,
-          wx,
-          wy,
+          Ex,
+          Ey,
           strokeWidth * 3
         );
         list.forEach((id) => erasedIdsRef.current.add(id));
@@ -401,10 +425,12 @@ export default function Canvas() {
           storeRef.current.strokeWidth
         );
         ctxRef.current.strokeRect(
-          rectangelElementSnapShotRef.current.x + panningOffset.current.x,
-          rectangelElementSnapShotRef.current.y + panningOffset.current.y,
-          w,
-          h
+          rectangelElementSnapShotRef.current.x * zoomLevelRef.current +
+            panningOffset.current.x,
+          rectangelElementSnapShotRef.current.y * zoomLevelRef.current +
+            panningOffset.current.y,
+          w * zoomLevelRef.current,
+          h * zoomLevelRef.current
         );
       } else if (tool === "circle") {
         if (!ctxRef.current) return;
@@ -433,9 +459,9 @@ export default function Canvas() {
 
         ctx.beginPath();
         ctx.arc(
-          center.x + panningOffset.current.x,
-          center.y + panningOffset.current.y,
-          radius,
+          center.x * zoomLevelRef.current + panningOffset.current.x,
+          center.y * zoomLevelRef.current + panningOffset.current.y,
+          radius * zoomLevelRef.current,
           0,
           Math.PI * 2
         );
@@ -459,8 +485,8 @@ export default function Canvas() {
       if (!isActive.current) return;
       const { x, y } = getCoords(e);
 
-      const wx = x - panningOffset.current.x;
-      const wy = y - panningOffset.current.y;
+      const wx = (x - panningOffset.current.x) / zoomLevelRef.current;
+      const wy = (y - panningOffset.current.y) / zoomLevelRef.current;
 
       isActive.current = false;
       const {
