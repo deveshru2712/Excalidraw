@@ -235,6 +235,10 @@ export default function Canvas() {
 
     const handleMouseDown = (e: MouseEvent) => {
       const { x, y } = getCoords(e);
+
+      const wx = x - panningOffset.current.x;
+      const wy = y - panningOffset.current.y;
+
       isActive.current = true;
       const { tool, strokeWidth, strokeColor, addElement } = storeRef.current;
 
@@ -242,19 +246,19 @@ export default function Canvas() {
         const list = GetElementsToErase(
           ctxRef.current!,
           storeRef.current.elements,
-          x,
-          y,
+          wx,
+          wy,
           strokeWidth * 3
         );
         list.forEach((id) => erasedIdsRef.current.add(id));
         redraw(erasedIdsRef.current);
       } else if (tool === "pencil") {
-        lastPoint.current = { x, y };
-        lastMid.current = { x, y };
+        lastPoint.current = { x: wx, y: wy };
+        lastMid.current = { x: wx, y: wy };
         currentPoints.current = [];
       } else if (tool === "text") {
-        activeInputPositionRef.current.x = x;
-        activeInputPositionRef.current.y = y;
+        activeInputPositionRef.current.x = wx;
+        activeInputPositionRef.current.y = wy;
 
         const inputElem = document.createElement("input");
         activeInputRef.current = inputElem;
@@ -275,7 +279,7 @@ export default function Canvas() {
             addElement({
               id,
               type: "text",
-              point: { x, y },
+              point: { x: wx, y: wy },
               strokeColor,
               fontSize: storeRef.current.fontSize,
               content: inputElem.value,
@@ -289,25 +293,25 @@ export default function Canvas() {
         const point = GetElementToMove(
           ctxRef.current!,
           storeRef.current.elements,
-          x,
-          y,
+          wx,
+          wy,
           threshold
         );
 
         // saving the dragged element id
         draggedElementIdRef.current = point;
         // saving the dragged element snapshot
-        draggedElementSnapShotRef.current = { x, y };
+        draggedElementSnapShotRef.current = { x: wx, y: wy };
         // updating the undo history
         storeRef.current.pushToUndoStack(storeRef.current.elements);
       } else if (tool === "rectangle") {
         // saving snapshot for rectangle element
-        rectangelElementSnapShotRef.current.x = x;
-        rectangelElementSnapShotRef.current.y = y;
+        rectangelElementSnapShotRef.current.x = wx;
+        rectangelElementSnapShotRef.current.y = wy;
       } else if (tool === "circle") {
         // saving the center snapshot for circle elmenet
-        circleElmentCenterRef.current.x = x;
-        circleElmentCenterRef.current.y = y;
+        circleElmentCenterRef.current.x = wx;
+        circleElmentCenterRef.current.y = wy;
       } else if (tool === "pan") {
         lastPanningSnapShot.current.x = x;
         lastPanningSnapShot.current.y = y;
@@ -320,11 +324,15 @@ export default function Canvas() {
       if (!ctx) return;
 
       const { x, y } = getCoords(e);
+
+      const wx = x - panningOffset.current.x;
+      const wy = y - panningOffset.current.y;
+
       const { tool, strokeColor, strokeWidth, strokeDash } = storeRef.current;
       if (tool === "pencil") {
         const currentMid = {
-          x: (lastPoint.current.x + x) / 2,
-          y: (lastPoint.current.y + y) / 2,
+          x: (lastPoint.current.x + wx) / 2,
+          y: (lastPoint.current.y + wy) / 2,
         };
 
         ctx.beginPath();
@@ -333,24 +341,27 @@ export default function Canvas() {
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         ApplyDashedStyle(ctx, strokeDash, strokeWidth);
-        ctx.moveTo(lastMid.current.x, lastMid.current.y);
+        ctx.moveTo(
+          lastMid.current.x + panningOffset.current.x,
+          lastMid.current.y + panningOffset.current.y
+        );
         ctx.quadraticCurveTo(
-          lastPoint.current.x,
-          lastPoint.current.y,
-          currentMid.x,
-          currentMid.y
+          lastPoint.current.x + panningOffset.current.x,
+          lastPoint.current.y + panningOffset.current.y,
+          currentMid.x + panningOffset.current.x,
+          currentMid.y + panningOffset.current.y
         );
         ctx.stroke();
 
         lastMid.current = currentMid;
-        lastPoint.current = { x, y };
-        currentPoints.current.push({ x, y });
+        lastPoint.current = { x: wx, y: wy };
+        currentPoints.current.push({ x: wx, y: wy });
       } else if (tool === "eraser") {
         const list = GetElementsToErase(
           ctxRef.current!,
           storeRef.current.elements,
-          x,
-          y,
+          wx,
+          wy,
           strokeWidth * 3
         );
         list.forEach((id) => erasedIdsRef.current.add(id));
@@ -362,8 +373,8 @@ export default function Canvas() {
         // if the element is selected
 
         const delta: Point = { x: 0, y: 0 };
-        delta.x = x - draggedElementSnapShotRef.current.x;
-        delta.y = y - draggedElementSnapShotRef.current.y;
+        delta.x = wx - draggedElementSnapShotRef.current.x;
+        delta.y = wy - draggedElementSnapShotRef.current.y;
 
         // calling the udpate function
         storeRef.current.updateElement(
@@ -373,12 +384,12 @@ export default function Canvas() {
         );
 
         // updating the co ordinates
-        draggedElementSnapShotRef.current.x = x;
-        draggedElementSnapShotRef.current.y = y;
+        draggedElementSnapShotRef.current.x = wx;
+        draggedElementSnapShotRef.current.y = wy;
       } else if (tool === "rectangle") {
         if (!ctxRef.current) return;
-        const w = x - rectangelElementSnapShotRef.current.x;
-        const h = y - rectangelElementSnapShotRef.current.y;
+        const w = wx - rectangelElementSnapShotRef.current.x;
+        const h = wy - rectangelElementSnapShotRef.current.y;
 
         // drawing the reactangle
         redraw();
@@ -401,8 +412,8 @@ export default function Canvas() {
         const center: Point = { x: 0, y: 0 };
 
         // calculating the center
-        center.x = (circleElmentCenterRef.current.x + x) / 2;
-        center.y = (circleElmentCenterRef.current.y + y) / 2;
+        center.x = (circleElmentCenterRef.current.x + wx) / 2;
+        center.y = (circleElmentCenterRef.current.y + wy) / 2;
 
         // calculating the center
         const radius = Math.sqrt(
@@ -441,6 +452,10 @@ export default function Canvas() {
     const handleMouseUp = (e: MouseEvent) => {
       if (!isActive.current) return;
       const { x, y } = getCoords(e);
+
+      const wx = x - panningOffset.current.x;
+      const wy = y - panningOffset.current.y;
+
       isActive.current = false;
       const {
         tool,
@@ -480,8 +495,8 @@ export default function Canvas() {
             x: rectangelElementSnapShotRef.current.x,
             y: rectangelElementSnapShotRef.current.y,
           },
-          height: y - rectangelElementSnapShotRef.current.y,
-          width: x - rectangelElementSnapShotRef.current.x,
+          height: wy - rectangelElementSnapShotRef.current.y,
+          width: wx - rectangelElementSnapShotRef.current.x,
           strokeColor,
           strokeWidth,
           strokeDash,
@@ -493,8 +508,8 @@ export default function Canvas() {
         const center: Point = { x: 0, y: 0 };
 
         // calculating the center
-        center.x = (circleElmentCenterRef.current.x + x) / 2;
-        center.y = (circleElmentCenterRef.current.y + y) / 2;
+        center.x = (circleElmentCenterRef.current.x + wx) / 2;
+        center.y = (circleElmentCenterRef.current.y + wy) / 2;
 
         // calculating the center
         const radius = Math.sqrt(
@@ -535,7 +550,7 @@ export default function Canvas() {
   }, []);
 
   useEffect(() => {
-    focusContent();
+    if (isPanning) focusContent();
   }, [isPanning]);
 
   useEffect(() => {
