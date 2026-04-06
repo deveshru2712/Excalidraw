@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "server": "cd server && bun run index.ts",
+    "dev:all": "bun run --parallel dev server",
     "lint": "next lint",
     "format": "prettier --ignore-path .prettierignore --write \"**/*.{ts,tsx,js,jsx,json,md,mdx,css,scss}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,mdx,css,scss}\"",
