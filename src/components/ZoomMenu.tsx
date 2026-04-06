@@ -1,6 +1,6 @@
 import { Minus, Plus } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import Button from "@/components/ui/button";
 import { useDrawingStore } from "@/stores/useDrawingStore";
 
 export default function ZoomMenu() {
