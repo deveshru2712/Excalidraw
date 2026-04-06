@@ -1,12 +1,26 @@
-import express from "express";
+import { Server as Engine } from "@socket.io/bun-engine";
+import "dotenv/config";
+import { Server } from "socket.io";
 
-const app = express();
-const port = 8080;
-
-app.get("/", (req, res) => {
-  res.send("Hello World!");
+const engine = new Engine({
+  path: "/socket.io/",
 });
 
-app.listen(port, () => {
-  console.log(`Listening on port ${port}...`);
+const io = new Server({
+  cors: {
+    origin: process.env.FRONTEND_URL,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
 });
+
+io.bind(engine);
+
+io.on("connection", (socket) => {
+  console.log("a new user connected", socket.id);
+});
+
+export default {
+  port: 8080,
+  ...engine.handler(),
+};
