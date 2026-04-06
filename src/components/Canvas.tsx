@@ -589,5 +589,5 @@ export default function Canvas() {
     redraw();
   }, [elements]);
 
-  return <canvas ref={canvasRef} className="z-0 cursor-none bg-neutral-100" />;
+  return <canvas ref={canvasRef} className="cursor-none bg-neutral-100" />;
 }
