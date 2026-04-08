@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { DoorOpen } from 'lucide-react';
 import { useParams } from 'react-router';
 
+import Button from '@/components/ui/button';
+
 import Canvas from '@/components/Canvas/Canvas';
 import CursorOverlay from '@/components/Canvas/CursorOverlay';
 import ToolsMenu from '@/components/Canvas/ToolMenu';
@@ -13,24 +15,24 @@ import CollaboratorsMenu from '@/components/Collaboration/CollaboratorsMenu';
 import SessionClosedOverlay from '@/components/Collaboration/SessionClosedOverlay';
 import { socket } from '@/lib/socket';
 
-import Button from '../ui/button';
-
 export default function CollaborativePlayground() {
+    const { roomId } = useParams();
+
     const [isActive, setIsActive] = useState(false);
     const [overlayReason, setOverlayReason] =
         useState<ExitReason>('host-ended');
-
-    const { roomId } = useParams();
+    const [isActualOwner] = useState(() => {
+        const isOwner = localStorage.getItem('isRoomOwner') === 'true';
+        const storedRoomId = localStorage.getItem('ownerRoomId');
+        return isOwner && storedRoomId === roomId;
+    });
 
     useEffect(() => {
         if (!roomId) return;
 
-        const isOwner = localStorage.getItem('isRoomOwner') === 'true';
-        const storedRoomId = localStorage.getItem('ownerRoomId');
-        const isActualOwner = isOwner && storedRoomId === roomId;
-
-        localStorage.removeItem('isRoomOwner');
-        localStorage.removeItem('ownerRoomId');
+        if (!socket.connected) {
+            socket.connect();
+        }
 
         if (isActualOwner) {
             socket.emit('register-room', { roomId, isOwner: isActualOwner });
@@ -40,15 +42,14 @@ export default function CollaborativePlayground() {
 
         const handleRoomClosed = () => {
             setIsActive(true);
-            setOverlayReason((prev) =>
-                prev === 'self-exit' ? prev : 'host-ended',
-            );
+            setOverlayReason('host-ended');
         };
 
-        socket.on('room-closed', handleRoomClosed);
+        socket.on('room-shutdown', handleRoomClosed);
 
         return () => {
-            socket.off('room-closed', handleRoomClosed);
+            socket.off('room-shutdown', handleRoomClosed);
+            socket.emit('exit-room', { roomId });
         };
     }, [roomId]);
 
@@ -57,7 +58,15 @@ export default function CollaborativePlayground() {
             <Button
                 onClick={() => {
                     setIsActive(true);
-                    setOverlayReason('self-exit');
+                    if (isActualOwner) {
+                        setOverlayReason('host-ended');
+                        // emit an event to un-register room and remove all the participants
+                        socket.emit('close-room', {});
+                    } else {
+                        setOverlayReason('self-exit');
+                        // listen for removal
+                        socket.emit('exit-room', { roomId });
+                    }
                     localStorage.removeItem('drawing-store');
                 }}
                 className="absolute top-5 right-5 flex w-fit items-center gap-0.5 rounded-sm"

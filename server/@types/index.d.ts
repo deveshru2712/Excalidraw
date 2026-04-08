@@ -6,3 +6,7 @@ interface RegisterRoomPayload {
 interface JoinRoomPayload {
     roomId: string;
 }
+
+interface ExitingRoomPayload {
+    roomId: string;
+}
