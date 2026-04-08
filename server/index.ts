@@ -57,6 +57,7 @@ io.on('connection', (socket) => {
         socket.leave(data.roomId);
     });
 
+    // closing the room -> admin user
     socket.on('close-room', () => {
         for (const [roomId, ownerId] of activeRooms.entries()) {
             if (ownerId === socket.id) {
@@ -66,6 +67,26 @@ io.on('connection', (socket) => {
             }
         }
         console.log('room closed');
+    });
+
+    // adding element
+    socket.on('element:add', (data: AddEventPayload) => {
+        socket.to(data.roomId).emit('element:added', data);
+    });
+
+    // updating elements
+    socket.on('element:update', (data: UpdateEventPayload) => {
+        socket.to(data.roomId).emit('element:updated', data);
+    });
+
+    // removing elements
+    socket.on('element:remove', (data: RemoveEventPayload) => {
+        socket.to(data.roomId).emit('element:removed', data);
+    });
+
+    // pushing the history
+    socket.on('history:push', (data: PushEventPayload) => {
+        socket.to(data.roomId).emit('history:pushed', data);
     });
 
     socket.on('disconnect', () => {

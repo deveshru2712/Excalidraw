@@ -30,7 +30,7 @@ interface TextElement {
     content: string;
 }
 
-interface RectangelElement {
+interface RectangleElement {
     id: string;
     type: 'rectangle';
     point: Point;
@@ -54,7 +54,7 @@ interface CircleElement {
 type DrawingElement =
     | PencilElement
     | TextElement
-    | RectangelElement
+    | RectangleElement
     | CircleElement;
 
 type ExitReason = 'host-ended' | 'self-exit';

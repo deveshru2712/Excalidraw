@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+import { useParams } from 'react-router';
+
 import { useDrawingStore } from '@/stores/useDrawingStore';
 import { useToolStore } from '@/stores/useToolStore';
 import ApplyDashedStyle from '@/utils/applyStrokeStyle';
@@ -14,21 +16,24 @@ export default function Canvas() {
     const isPanning = useDrawingStore((state) => state.isPanning);
     const zoomDirection = useDrawingStore((state) => state.zoomDirection);
 
+    // for broadcasting event for collaborations
+    const { roomId } = useParams();
+
     const erasedIdsRef = useRef<Set<string>>(new Set());
 
     // for text element
     const activeInputRef = useRef<HTMLInputElement | null>(null);
     const activeInputPositionRef = useRef<Point>({ x: 0, y: 0 });
 
-    // for drage and move
+    // for drag and move
     const draggedElementIdRef = useRef<string | null>(null);
     const draggedElementSnapShotRef = useRef<Point>({ x: 0, y: 0 });
 
-    // for rectangel element
-    const rectangelElementSnapShotRef = useRef<Point>({ x: 0, y: 0 });
+    // for rectangle element
+    const rectangleElementSnapShotRef = useRef<Point>({ x: 0, y: 0 });
 
     // for circle element
-    const circleElmentCenterRef = useRef<Point>({ x: 0, y: 0 });
+    const circleElementCenterRef = useRef<Point>({ x: 0, y: 0 });
 
     // for panning canvas
     const lastPanningSnapShot = useRef<Point>({ x: 0, y: 0 });
@@ -154,6 +159,9 @@ export default function Canvas() {
         const y = activeInputPositionRef.current.y;
         if (activeInputRef.current && activeInputRef.current.value.length > 0) {
             const id = crypto.randomUUID();
+            if (roomId) {
+                // add element
+            }
             addElement({
                 id,
                 type: 'text',
@@ -313,6 +321,9 @@ export default function Canvas() {
                 inputElem.addEventListener('keydown', (e: KeyboardEvent) => {
                     if (e.key === 'Enter') {
                         const id = crypto.randomUUID();
+                        if (roomId) {
+                            // add element here
+                        }
                         addElement({
                             id,
                             type: 'text',
@@ -340,15 +351,18 @@ export default function Canvas() {
                 // saving the dragged element snapshot
                 draggedElementSnapShotRef.current = { x: wx, y: wy };
                 // updating the undo history
+                if (roomId) {
+                    // pushing the history
+                }
                 storeRef.current.pushToUndoStack(storeRef.current.elements);
             } else if (tool === 'rectangle') {
                 // saving snapshot for rectangle element
-                rectangelElementSnapShotRef.current.x = wx;
-                rectangelElementSnapShotRef.current.y = wy;
+                rectangleElementSnapShotRef.current.x = wx;
+                rectangleElementSnapShotRef.current.y = wy;
             } else if (tool === 'circle') {
-                // saving the center snapshot for circle elmenet
-                circleElmentCenterRef.current.x = wx;
-                circleElmentCenterRef.current.y = wy;
+                // saving the center snapshot for circle element
+                circleElementCenterRef.current.x = wx;
+                circleElementCenterRef.current.y = wy;
             } else if (tool === 'pan') {
                 lastPanningSnapShot.current.x = x;
                 lastPanningSnapShot.current.y = y;
@@ -422,7 +436,10 @@ export default function Canvas() {
                 delta.x = wx - draggedElementSnapShotRef.current.x;
                 delta.y = wy - draggedElementSnapShotRef.current.y;
 
-                // calling the udpate function
+                // calling the update function
+                if (roomId) {
+                    // update element
+                }
                 storeRef.current.updateElement(
                     draggedElementIdRef.current,
                     delta.x,
@@ -434,10 +451,10 @@ export default function Canvas() {
                 draggedElementSnapShotRef.current.y = wy;
             } else if (tool === 'rectangle') {
                 if (!ctxRef.current) return;
-                const w = wx - rectangelElementSnapShotRef.current.x;
-                const h = wy - rectangelElementSnapShotRef.current.y;
+                const w = wx - rectangleElementSnapShotRef.current.x;
+                const h = wy - rectangleElementSnapShotRef.current.y;
 
-                // drawing the reactangle
+                // drawing the rectangle
                 redraw();
                 ctx.strokeStyle = storeRef.current.strokeColor;
                 ctx.lineWidth = storeRef.current.strokeWidth;
@@ -447,10 +464,10 @@ export default function Canvas() {
                     storeRef.current.strokeWidth,
                 );
                 ctxRef.current.strokeRect(
-                    rectangelElementSnapShotRef.current.x *
+                    rectangleElementSnapShotRef.current.x *
                         zoomLevelRef.current +
                         panningOffset.current.x,
-                    rectangelElementSnapShotRef.current.y *
+                    rectangleElementSnapShotRef.current.y *
                         zoomLevelRef.current +
                         panningOffset.current.y,
                     w * zoomLevelRef.current,
@@ -462,13 +479,13 @@ export default function Canvas() {
                 const center: Point = { x: 0, y: 0 };
 
                 // calculating the center
-                center.x = (circleElmentCenterRef.current.x + wx) / 2;
-                center.y = (circleElmentCenterRef.current.y + wy) / 2;
+                center.x = (circleElementCenterRef.current.x + wx) / 2;
+                center.y = (circleElementCenterRef.current.y + wy) / 2;
 
                 // calculating the center
                 const radius = Math.sqrt(
-                    (circleElmentCenterRef.current.x - center.x) ** 2 +
-                        (circleElmentCenterRef.current.y - center.y) ** 2,
+                    (circleElementCenterRef.current.x - center.x) ** 2 +
+                        (circleElementCenterRef.current.y - center.y) ** 2,
                 );
 
                 redraw();
@@ -524,11 +541,17 @@ export default function Canvas() {
 
             if (tool === 'eraser') {
                 if (erasedIdsRef.current.size === 0) return;
+                if (roomId) {
+                    // remove element
+                }
                 removeElement([...erasedIdsRef.current]);
                 erasedIdsRef.current.clear();
                 return;
             } else if (tool === 'pencil') {
                 if (currentPoints.current.length === 0) return;
+                if (roomId) {
+                    // add element
+                }
                 addElement({
                     id: crypto.randomUUID(),
                     type: 'pencil',
@@ -544,34 +567,41 @@ export default function Canvas() {
                 draggedElementSnapShotRef.current = { x: 0, y: 0 };
             } else if (tool === 'rectangle') {
                 // calling the add  function to add the rectangle to update
+                if (roomId) {
+                    // add element
+                }
                 addElement({
                     id: crypto.randomUUID(),
                     type: 'rectangle',
                     point: {
-                        x: rectangelElementSnapShotRef.current.x,
-                        y: rectangelElementSnapShotRef.current.y,
+                        x: rectangleElementSnapShotRef.current.x,
+                        y: rectangleElementSnapShotRef.current.y,
                     },
-                    height: wy - rectangelElementSnapShotRef.current.y,
-                    width: wx - rectangelElementSnapShotRef.current.x,
+                    height: wy - rectangleElementSnapShotRef.current.y,
+                    width: wx - rectangleElementSnapShotRef.current.x,
                     strokeColor,
                     strokeWidth,
                     strokeDash,
                 });
-                // reseting the rectangle snapshot
-                rectangelElementSnapShotRef.current.x = 0;
-                rectangelElementSnapShotRef.current.y = 0;
+                // resetting the rectangle snapshot
+                rectangleElementSnapShotRef.current.x = 0;
+                rectangleElementSnapShotRef.current.y = 0;
             } else if (tool === 'circle') {
                 const center: Point = { x: 0, y: 0 };
 
                 // calculating the center
-                center.x = (circleElmentCenterRef.current.x + wx) / 2;
-                center.y = (circleElmentCenterRef.current.y + wy) / 2;
+                center.x = (circleElementCenterRef.current.x + wx) / 2;
+                center.y = (circleElementCenterRef.current.y + wy) / 2;
 
                 // calculating the center
                 const radius = Math.sqrt(
-                    (circleElmentCenterRef.current.x - center.x) ** 2 +
-                        (circleElmentCenterRef.current.y - center.y) ** 2,
+                    (circleElementCenterRef.current.x - center.x) ** 2 +
+                        (circleElementCenterRef.current.y - center.y) ** 2,
                 );
+
+                if (roomId) {
+                    // add element
+                }
 
                 addElement({
                     id: crypto.randomUUID(),
@@ -586,9 +616,9 @@ export default function Canvas() {
                     strokeDash,
                 });
 
-                // reseting the circle ref
-                circleElmentCenterRef.current.x = 0;
-                circleElmentCenterRef.current.y = 0;
+                // resetting the circle ref
+                circleElementCenterRef.current.x = 0;
+                circleElementCenterRef.current.y = 0;
             } else if (tool === 'pan') {
                 // redraw();
             }
