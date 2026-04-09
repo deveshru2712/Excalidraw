@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react';
 
-// import { useParams } from 'react-router';
-
 import { socket } from '@/lib/socket';
 import { useDrawingStore } from '@/stores/useDrawingStore';
 import { useToolStore } from '@/stores/useToolStore';
@@ -10,22 +8,27 @@ import GetElementsToErase from '@/utils/getElementToErase';
 import GetElementToMove from '@/utils/getElementToMove';
 import getPanning from '@/utils/getPanning';
 
-export default function CollaborationCanvas() {
+interface CollaborationCanvasProps {
+    roomId: string;
+}
+
+export default function CollaborationCanvas({
+    roomId,
+}: CollaborationCanvasProps) {
     const drawingStore = useDrawingStore();
     const toolStore = useToolStore();
     const elements = useDrawingStore((state) => state.elements);
     const isPanning = useDrawingStore((state) => state.isPanning);
     const zoomDirection = useDrawingStore((state) => state.zoomDirection);
 
-    // const { roomdId } = useParams();
-
     // for pencil stroke tracking
-    // const inProgressStrokes = useRef<Map<string, Point[]>>(new Map());
+    const inProgressStrokes = useRef<Map<string, PencilElement>>(new Map());
 
     // for rectangle and circle tracking
-    // const inProgressShapes = useRef<Map<string, ShapePreviewPayload>>(
-    //     new Map(),
-    // );
+    const inProgressShapes = useRef<
+        Map<string, RectangleElement | CircleElement>
+    >(new Map());
+
     const activeStrokeIdRef = useRef<string>('');
 
     const erasedIdsRef = useRef<Set<string>>(new Set());
@@ -143,6 +146,72 @@ export default function CollaborationCanvas() {
                 ctx.setLineDash([]);
             }
         });
+
+        // the other user is actively drawing using pencil
+
+        for (const [, value] of inProgressStrokes.current) {
+            const points = value.points;
+            if (points.length < 2) return;
+
+            ctx.beginPath();
+            ctx.strokeStyle = value.strokeColor;
+            ctx.lineWidth = value.strokeWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ApplyDashedStyle(ctx, value.strokeDash, value.strokeWidth);
+
+            ctx.moveTo(points[0].x, points[0].y);
+
+            for (let i = 1; i < points.length - 1; i++) {
+                const currentMid = {
+                    x: (points[i].x + points[i + 1].x) / 2,
+                    y: (points[i].y + points[i + 1].y) / 2,
+                };
+                ctx.quadraticCurveTo(
+                    points[i].x,
+                    points[i].y,
+                    currentMid.x,
+                    currentMid.y,
+                );
+            }
+
+            ctx.lineTo(
+                points[points.length - 1].x,
+                points[points.length - 1].y,
+            );
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // the other user is drawing shapes
+        for (const [, value] of inProgressShapes.current) {
+            if (value.type === 'rectangle') {
+                ctx.strokeStyle = value.strokeColor;
+                ctx.lineWidth = value.strokeWidth;
+                ApplyDashedStyle(ctx, value.strokeDash, value.strokeWidth);
+                ctx.strokeRect(
+                    value.point.x,
+                    value.point.y,
+                    value.width,
+                    value.height,
+                );
+            } else if (value.type === 'circle') {
+                ctx.strokeStyle = value.strokeColor;
+                ctx.lineWidth = value.strokeWidth;
+                ApplyDashedStyle(ctx, value.strokeDash, value.strokeWidth);
+                ctx.beginPath();
+                ctx.arc(
+                    value.center.x,
+                    value.center.y,
+                    value.radius,
+                    0,
+                    Math.PI * 2,
+                );
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
         ctx.restore();
     }
 
@@ -277,6 +346,97 @@ export default function CollaborationCanvas() {
 
     const threshold = 8;
 
+    // socket listner to update the canvas
+    useEffect(() => {
+        // for adding element to the canvas
+        const handleAddElement = (data: AddEventPayload) => {
+            const elementId = data.element.id;
+            const elementType = data.element.type;
+            // removing the element
+            if (elementType === 'pencil') {
+                inProgressStrokes.current.delete(elementId);
+            } else {
+                inProgressShapes.current.delete(elementId);
+            }
+
+            storeRef.current.addElement(data.element);
+        };
+
+        // for removing element from the canvas
+        const handleRemoveElement = (data: RemoveEventPayload) => {
+            console.log('element removed');
+            storeRef.current.removeElement(data.elementIds);
+        };
+
+        //for updating elment location in the canvas
+        const handleUpdateElement = (data: UpdateEventPayload) => {
+            console.log(
+                elements.map((element) => element.id == data.elementIds),
+            );
+            storeRef.current.updateElement(
+                data.elementIds,
+                data.offsetX,
+                data.offsetY,
+            );
+        };
+
+        //for updating the redo/undo history
+        const handlePushToUndo = (data: PushEventPayload) => {
+            console.log('element pushed');
+            storeRef.current.pushToUndoStack(data.elements);
+        };
+
+        // preview
+        const handlePreviewElement = (data: PreviewPayload) => {
+            if (data.type === 'pencil') {
+                inProgressStrokes.current.set(data.strokeId, {
+                    id: data.strokeId,
+                    type: 'pencil',
+                    points: data.points,
+                    strokeColor: data.strokeColor,
+                    strokeDash: data.strokeDash,
+                    strokeWidth: data.strokeWidth,
+                });
+            } else if (data.type === 'rectangle') {
+                inProgressShapes.current.set(data.strokeId, {
+                    id: data.strokeId,
+                    type: 'rectangle',
+                    point: data.point,
+                    height: data.height,
+                    width: data.width,
+                    strokeColor: data.strokeColor,
+                    strokeWidth: data.strokeWidth,
+                    strokeDash: data.strokeDash,
+                });
+            } else {
+                inProgressShapes.current.set(data.strokeId, {
+                    id: data.strokeId,
+                    type: 'circle',
+                    center: data.center,
+                    radius: data.radius,
+                    strokeColor: data.strokeColor,
+                    strokeWidth: data.strokeWidth,
+                    strokeDash: data.strokeDash,
+                });
+            }
+            redraw();
+        };
+
+        socket.on('element:added', handleAddElement);
+        socket.on('element:removed', handleRemoveElement);
+        socket.on('element:updated', handleUpdateElement);
+        socket.on('history:pushed', handlePushToUndo);
+        socket.on('element:preview', handlePreviewElement);
+
+        return () => {
+            socket.off('element:added', handleAddElement);
+            socket.off('element:removed', handleRemoveElement);
+            socket.off('element:updated', handleUpdateElement);
+            socket.off('history:pushed', handlePushToUndo);
+            socket.off('element:preview', handlePreviewElement);
+        };
+    }, []);
+
     // actual writing and erasing logic
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -284,6 +444,9 @@ export default function CollaborationCanvas() {
 
         const handleMouseDown = (e: MouseEvent) => {
             const { x, y } = getCoords(e);
+
+            const id = crypto.randomUUID();
+            activeStrokeIdRef.current = id;
 
             const wx = (x - panningOffset.current.x) / zoomLevelRef.current;
             const wy = (y - panningOffset.current.y) / zoomLevelRef.current;
@@ -305,12 +468,19 @@ export default function CollaborationCanvas() {
                 list.forEach((id) => erasedIdsRef.current.add(id));
                 redraw(erasedIdsRef.current);
             } else if (tool === 'pencil') {
+                inProgressStrokes.current.set(activeStrokeIdRef.current, {
+                    id: activeStrokeIdRef.current,
+                    points: [{ x: wx, y: wy }],
+                    strokeColor: storeRef.current.strokeColor,
+                    strokeDash: storeRef.current.strokeDash,
+                    strokeWidth: storeRef.current.strokeWidth,
+                    type: 'pencil',
+                });
+
                 lastPoint.current = { x: wx, y: wy };
                 lastMid.current = { x: wx, y: wy };
                 currentPoints.current = [];
                 // generating id for the element
-                const id = crypto.randomUUID();
-                activeStrokeIdRef.current = id;
             } else if (tool === 'text') {
                 activeInputPositionRef.current.x = wx;
                 activeInputPositionRef.current.y = wy;
@@ -359,14 +529,47 @@ export default function CollaborationCanvas() {
                 draggedElementSnapShotRef.current = { x: wx, y: wy };
                 // updating the undo history
                 storeRef.current.pushToUndoStack(storeRef.current.elements);
+                // emit evet to update undo history
+                const updateUndoHistory: PushEventPayload = {
+                    roomId,
+                    elements: [...storeRef.current.elements],
+                };
+                socket.emit('history:push', updateUndoHistory);
             } else if (tool === 'rectangle') {
                 // saving snapshot for rectangle element
                 rectangleElementSnapShotRef.current.x = wx;
                 rectangleElementSnapShotRef.current.y = wy;
+
+                // creating a entry
+                inProgressShapes.current.set(activeStrokeIdRef.current, {
+                    id: activeStrokeIdRef.current,
+                    type: 'rectangle',
+                    height: 0,
+                    width: 0,
+                    point: {
+                        x: rectangleElementSnapShotRef.current.x,
+                        y: rectangleElementSnapShotRef.current.y,
+                    },
+                    strokeColor: storeRef.current.strokeColor,
+                    strokeDash: storeRef.current.strokeDash,
+                    strokeWidth: storeRef.current.strokeWidth,
+                });
             } else if (tool === 'circle') {
                 // saving the center snapshot for circle element
                 circleElementCenterRef.current.x = wx;
                 circleElementCenterRef.current.y = wy;
+                inProgressShapes.current.set(activeStrokeIdRef.current, {
+                    id: activeStrokeIdRef.current,
+                    type: 'circle',
+                    center: {
+                        x: circleElementCenterRef.current.x,
+                        y: circleElementCenterRef.current.y,
+                    },
+                    radius: 0,
+                    strokeColor: storeRef.current.strokeColor,
+                    strokeDash: storeRef.current.strokeDash,
+                    strokeWidth: storeRef.current.strokeWidth,
+                });
             } else if (tool === 'pan') {
                 lastPanningSnapShot.current.x = x;
                 lastPanningSnapShot.current.y = y;
@@ -420,7 +623,21 @@ export default function CollaborationCanvas() {
                 currentPoints.current.push({ x: wx, y: wy });
 
                 // pushing an event to the server
-                socket.emit('element:preview', () => {});
+                const strokeId = activeStrokeIdRef.current;
+                const currentElement = inProgressStrokes.current.get(
+                    activeStrokeIdRef.current,
+                );
+                if (!currentElement) return;
+
+                // pushing now cords
+                currentElement.points.push({ x: wx, y: wy });
+
+                const data: PreviewPayload = {
+                    roomId,
+                    strokeId,
+                    ...currentElement,
+                };
+                socket.emit('element:preview', data);
             } else if (tool === 'eraser') {
                 const Ex = (x - panningOffset.current.x) / zoomLevelRef.current;
                 const Ey = (y - panningOffset.current.y) / zoomLevelRef.current;
@@ -433,6 +650,14 @@ export default function CollaborationCanvas() {
                 );
                 list.forEach((id) => erasedIdsRef.current.add(id));
                 redraw(erasedIdsRef.current);
+
+                // emit event to remove element
+                const removeElementData: RemoveEventPayload = {
+                    roomId,
+                    elementIds: [...erasedIdsRef.current],
+                };
+
+                socket.emit('element:remove', removeElementData);
             } else if (tool === 'drag') {
                 // meaning none element is selected
                 if (!draggedElementIdRef.current) return;
@@ -453,6 +678,15 @@ export default function CollaborationCanvas() {
                 // updating the co ordinates
                 draggedElementSnapShotRef.current.x = wx;
                 draggedElementSnapShotRef.current.y = wy;
+
+                // emit event to update element position
+                const updateElementData: UpdateEventPayload = {
+                    roomId,
+                    elementIds: draggedElementIdRef.current,
+                    offsetX: delta.x,
+                    offsetY: delta.y,
+                };
+                socket.emit('element:update', updateElementData);
             } else if (tool === 'rectangle') {
                 if (!ctxRef.current) return;
                 const w = wx - rectangleElementSnapShotRef.current.x;
@@ -477,6 +711,22 @@ export default function CollaborationCanvas() {
                     w * zoomLevelRef.current,
                     h * zoomLevelRef.current,
                 );
+
+                // emit preview event for rectangle
+                const strokeId = activeStrokeIdRef.current;
+                const currentElement = inProgressShapes.current.get(strokeId);
+
+                if (currentElement?.type === 'rectangle') {
+                    currentElement.height = h;
+                    currentElement.width = w;
+                }
+
+                const data: PreviewPayload = {
+                    roomId,
+                    strokeId,
+                    ...currentElement!,
+                };
+                socket.emit('element:preview', data);
             } else if (tool === 'circle') {
                 if (!ctxRef.current) return;
 
@@ -512,6 +762,23 @@ export default function CollaborationCanvas() {
                 );
                 ctx.stroke();
                 ctx.setLineDash([]);
+
+                // emit preview event for circle
+                const strokeId = activeStrokeIdRef.current;
+                const currentElement = inProgressShapes.current.get(strokeId);
+
+                if (currentElement?.type === 'circle') {
+                    currentElement.center = center;
+                    currentElement.radius = radius;
+                }
+
+                const data: PreviewPayload = {
+                    roomId,
+                    strokeId,
+                    ...currentElement!,
+                };
+
+                socket.emit('element:preview', data);
             } else if (tool === 'pan') {
                 // calculating the offset
                 const offsetX = x - lastPanningSnapShot.current.x;
@@ -547,17 +814,35 @@ export default function CollaborationCanvas() {
                 if (erasedIdsRef.current.size === 0) return;
                 removeElement([...erasedIdsRef.current]);
                 erasedIdsRef.current.clear();
-                return;
             } else if (tool === 'pencil') {
                 if (currentPoints.current.length === 0) return;
+
                 addElement({
-                    id: crypto.randomUUID(),
+                    id: activeStrokeIdRef.current,
                     type: 'pencil',
                     points: currentPoints.current,
                     strokeColor,
                     strokeWidth,
                     strokeDash,
                 });
+
+                const addElementData: AddEventPayload = {
+                    roomId,
+                    element: {
+                        id: activeStrokeIdRef.current,
+                        type: 'pencil',
+                        points: currentPoints.current,
+                        strokeColor,
+                        strokeWidth,
+                        strokeDash,
+                    },
+                };
+
+                // clearing ref
+                inProgressStrokes.current = new Map();
+
+                socket.emit('element:add', addElementData);
+
                 currentPoints.current = [];
             } else if (tool === 'drag') {
                 // resetting the dragged element
@@ -566,7 +851,7 @@ export default function CollaborationCanvas() {
             } else if (tool === 'rectangle') {
                 // calling the add  function to add the rectangle to update
                 addElement({
-                    id: crypto.randomUUID(),
+                    id: activeStrokeIdRef.current,
                     type: 'rectangle',
                     point: {
                         x: rectangleElementSnapShotRef.current.x,
@@ -578,6 +863,26 @@ export default function CollaborationCanvas() {
                     strokeWidth,
                     strokeDash,
                 });
+
+                // emit event to add rectangle
+                const addRectangleElement: AddEventPayload = {
+                    roomId,
+                    element: {
+                        id: activeStrokeIdRef.current,
+                        type: 'rectangle',
+                        point: {
+                            x: rectangleElementSnapShotRef.current.x,
+                            y: rectangleElementSnapShotRef.current.y,
+                        },
+                        height: wy - rectangleElementSnapShotRef.current.y,
+                        width: wx - rectangleElementSnapShotRef.current.x,
+                        strokeColor,
+                        strokeWidth,
+                        strokeDash,
+                    },
+                };
+                socket.emit('element:add', addRectangleElement);
+
                 // resetting the rectangle snapshot
                 rectangleElementSnapShotRef.current.x = 0;
                 rectangleElementSnapShotRef.current.y = 0;
@@ -595,7 +900,7 @@ export default function CollaborationCanvas() {
                 );
 
                 addElement({
-                    id: crypto.randomUUID(),
+                    id: activeStrokeIdRef.current,
                     type: 'circle',
                     center: {
                         x: center.x,
@@ -607,11 +912,27 @@ export default function CollaborationCanvas() {
                     strokeDash,
                 });
 
+                // emit to add circle element
+                const addCircleElement: AddEventPayload = {
+                    roomId,
+                    element: {
+                        id: activeStrokeIdRef.current,
+                        type: 'circle',
+                        center: {
+                            x: center.x,
+                            y: center.y,
+                        },
+                        radius,
+                        strokeColor,
+                        strokeWidth,
+                        strokeDash,
+                    },
+                };
+                socket.emit('element:add', addCircleElement);
+
                 // resetting the circle ref
                 circleElementCenterRef.current.x = 0;
                 circleElementCenterRef.current.y = 0;
-            } else if (tool === 'pan') {
-                // redraw();
             }
         };
 

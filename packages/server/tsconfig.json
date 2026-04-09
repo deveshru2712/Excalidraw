@@ -26,8 +26,8 @@
 
         "baseUrl": ".",
         "paths": {
-            "@my-app/shared": ["../shared/src/index.ts"]
+            "@excalidraw-clone/shared": ["../shared/src/index.ts"]
         }
     },
-    "include": ["src"]
+    "include": ["src", "../shared/@types/index.d.ts"]
 }

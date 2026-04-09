@@ -41,14 +41,13 @@ interface CircleElement {
     strokeDash: string;
 }
 
-
 type DrawingElement =
     | PencilElement
     | TextElement
     | RectangleElement
     | CircleElement;
 
-
+// socket evet types
 interface AddEventPayload {
     roomId: string;
     element: DrawingElement;
@@ -75,21 +74,36 @@ interface PencilPreviewPayload {
     roomId: string;
     strokeId: string;
     type: 'pencil';
-    point: Point;
+    points: Point[];
     strokeColor: string;
     strokeWidth: number;
     strokeDash: string;
 }
 
-interface ShapePreviewPayload {
+interface RectanglePreviewPayload {
     roomId: string;
     strokeId: string;
-    type: 'rectangle' | 'circle';
-    startPoint: Point;
-    currentPoint: Point;
+    type: 'rectangle';
+    point: Point;
+    height: number;
+    width: number;
     strokeColor: string;
     strokeWidth: number;
     strokeDash: string;
 }
 
-type PreviewPayload = PencilPreviewPayload | ShapePreviewPayload;
+interface CirclePreviewPayload {
+    roomId: string;
+    strokeId: string;
+    type: 'circle';
+    center: Point;
+    radius: number;
+    strokeColor: string;
+    strokeWidth: number;
+    strokeDash: string;
+}
+
+type PreviewPayload =
+    | PencilPreviewPayload
+    | RectanglePreviewPayload
+    | CirclePreviewPayload;

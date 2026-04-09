@@ -82,11 +82,13 @@ io.on('connection', (socket) => {
 
     // adding element
     socket.on('element:add', (data: AddEventPayload) => {
+        console.log('new add', data.roomId);
         socket.to(data.roomId).emit('element:added', data);
     });
 
     // updating elements
     socket.on('element:update', (data: UpdateEventPayload) => {
+        console.log('update', data.roomId);
         socket.to(data.roomId).emit('element:updated', data);
     });
 

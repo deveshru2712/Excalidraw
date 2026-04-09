@@ -10,12 +10,11 @@ import ToolsMenu from '@/components/Canvas/ToolMenu';
 import ToolSettingMenu from '@/components/Canvas/ToolSettingMenu';
 import UtilsMenu from '@/components/Canvas/UtilsMenu';
 import ZoomMenu from '@/components/Canvas/ZoomMenu';
+import CollaborationCanvas from '@/components/Collaboration/CollaborationCanvas';
 import CollaboratorsMenu from '@/components/Collaboration/CollaboratorsMenu';
 import RoomNotFound from '@/components/Collaboration/RoomNotFound';
 import SessionClosedOverlay from '@/components/Collaboration/SessionClosedOverlay';
 import { socket } from '@/lib/socket';
-
-import CollaborationCanvas from './CollaborationCanvas';
 
 export default function CollaborativePlayground() {
     const { roomId } = useParams();
@@ -36,6 +35,9 @@ export default function CollaborativePlayground() {
         if (!socket.connected) {
             socket.connect();
         }
+
+        // clear the canvas
+        localStorage.removeItem('drawing-store');
 
         if (isActualOwner) {
             socket.emit('register-room', { roomId, isOwner: isActualOwner });
@@ -87,11 +89,9 @@ export default function CollaborativePlayground() {
             >
                 <DoorOpen className="size-4" /> Exit
             </Button>
-
             <SessionClosedOverlay isActive={isActive} reason={overlayReason} />
-
             <ToolsMenu />
-            <CollaborationCanvas />
+            <CollaborationCanvas roomId={roomId!} />
             <CollaboratorsMenu />
             <CursorOverlay />
             <ZoomMenu />
