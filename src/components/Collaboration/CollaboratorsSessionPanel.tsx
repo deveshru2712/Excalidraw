@@ -21,7 +21,7 @@ interface CollabSessionPanelProps {
     handleClose: () => void;
 }
 
-export default function CollabSessionPanel({
+export default function CollaboratorsSessionPanel({
     handleClose,
     isOpen,
 }: CollabSessionPanelProps) {

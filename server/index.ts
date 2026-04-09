@@ -40,14 +40,21 @@ io.on('connection', (socket) => {
         console.log('room is registered', data.roomId);
     });
 
-    // for non-admin user to join the room
     socket.on('join-room', (data: JoinRoomPayload) => {
-        const rooms = socket.rooms;
-        if (!rooms.has(data.roomId)) {
-            // only join if not already in room
-            socket.join(data.roomId);
-            console.log('a new user joins the room', socket.id);
+        const room = activeRooms.get(data.roomId);
+
+        if (!room) {
+            socket.emit('room-not-found');
+            return;
         }
+
+        // prevent duplicate join
+        if (socket.rooms.has(data.roomId)) {
+            return;
+        }
+
+        socket.join(data.roomId);
+        console.log('A new user joins the room', socket.id);
     });
 
     // for non-admin user exiting the room

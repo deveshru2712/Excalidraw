@@ -10,7 +10,7 @@ import ToolsMenu from '@/components/Canvas/ToolMenu';
 import ToolSettingMenu from '@/components/Canvas/ToolSettingMenu';
 import UtilsMenu from '@/components/Canvas/UtilsMenu';
 import ZoomMenu from '@/components/Canvas/ZoomMenu';
-import CollabSessionPanel from '@/components/Collaboration/CollabSessionPanel';
+import CollabSessionPanel from '@/components/Collaboration/CollaboratorsSessionPanel';
 
 export default function Playground() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);

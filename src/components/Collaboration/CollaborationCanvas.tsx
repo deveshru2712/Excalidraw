@@ -7,7 +7,7 @@ import GetElementsToErase from '@/utils/getElementToErase';
 import GetElementToMove from '@/utils/getElementToMove';
 import getPanning from '@/utils/getPanning';
 
-export default function Canvas() {
+export default function CollaborationCanvas() {
     const drawingStore = useDrawingStore();
     const toolStore = useToolStore();
     const elements = useDrawingStore((state) => state.elements);

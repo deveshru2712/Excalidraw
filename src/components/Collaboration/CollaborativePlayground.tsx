@@ -12,6 +12,7 @@ import ToolSettingMenu from '@/components/Canvas/ToolSettingMenu';
 import UtilsMenu from '@/components/Canvas/UtilsMenu';
 import ZoomMenu from '@/components/Canvas/ZoomMenu';
 import CollaboratorsMenu from '@/components/Collaboration/CollaboratorsMenu';
+import RoomNotFound from '@/components/Collaboration/RoomNotFound';
 import SessionClosedOverlay from '@/components/Collaboration/SessionClosedOverlay';
 import { socket } from '@/lib/socket';
 
@@ -19,6 +20,7 @@ export default function CollaborativePlayground() {
     const { roomId } = useParams();
 
     const [isActive, setIsActive] = useState(false);
+    const [error, setError] = useState(false);
     const [overlayReason, setOverlayReason] =
         useState<ExitReason>('host-ended');
     const [isActualOwner] = useState(() => {
@@ -45,13 +47,24 @@ export default function CollaborativePlayground() {
             setOverlayReason('host-ended');
         };
 
+        const handleRoomNotFound = () => {
+            setError(true);
+        };
+
         socket.on('room-shutdown', handleRoomClosed);
+        socket.on('room-not-found', handleRoomNotFound);
 
         return () => {
             socket.off('room-shutdown', handleRoomClosed);
+            socket.off('room-not-found', handleRoomNotFound);
+
             socket.emit('exit-room', { roomId });
         };
     }, [roomId]);
+
+    if (error) {
+        return <RoomNotFound />;
+    }
 
     return (
         <div className="relative h-screen w-full overflow-hidden">
