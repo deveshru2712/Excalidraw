@@ -56,7 +56,7 @@ export default function CollaborativePlayground() {
 
             console.log(latestElements);
 
-            socket.emit('sync-canvas', {
+            socket.emit('admin-canvas-sync', {
                 roomId,
                 elements: latestElements,
             });
@@ -64,7 +64,7 @@ export default function CollaborativePlayground() {
 
         if (isActualOwner) {
             socket.emit('register-room', { roomId, isOwner: true });
-            socket.on('request-sync', fullFillReq);
+            socket.on('client-req-synced', fullFillReq);
         } else {
             socket.emit('join-room', { roomId });
         }
@@ -86,13 +86,13 @@ export default function CollaborativePlayground() {
 
         socket.on('room-shutdown', handleRoomClosed);
         socket.on('room-not-found', handleRoomNotFound);
-        socket.on('canvas-synced', handleCanvasSynced);
+        socket.on('admin-canvas-synced', handleCanvasSynced);
 
         return () => {
             socket.off('room-shutdown', handleRoomClosed);
             socket.off('room-not-found', handleRoomNotFound);
-            socket.off('canvas-synced', handleCanvasSynced);
-            socket.off('request-sync', fullFillReq);
+            socket.off('admin-canvas-synced', handleCanvasSynced);
+            socket.off('client-req-synced', fullFillReq);
 
             if (roomId && socket.connected) {
                 socket.emit('exit-room', { roomId });
@@ -161,13 +161,13 @@ export default function CollaborativePlayground() {
                                         const latestElements =
                                             useDrawingStore.getState().elements;
 
-                                        socket.emit('sync-canvas', {
+                                        socket.emit('admin-canvas-sync', {
                                             roomId,
                                             elements: latestElements,
                                         });
                                     } else {
                                         // client request for sync
-                                        socket.emit('req-sync', roomId);
+                                        socket.emit('client-req-sync', roomId);
                                         console.log('request');
                                     }
                                 }}

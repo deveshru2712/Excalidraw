@@ -70,14 +70,14 @@ io.on('connection', (socket) => {
     });
 
     // admin sync
-    socket.on('sync-canvas', (data: SyncEventPayload) => {
-        socket.to(data.roomId).emit('canvas-synced', data);
+    socket.on('admin-canvas-sync', (data: SyncEventPayload) => {
+        socket.to(data.roomId).emit('admin-canvas-synced', data);
     });
 
     // client request to admin to sync
-    socket.on('req-sync', (roomId: string) => {
+    socket.on('client-req-sync', (roomId: string) => {
         console.log('request', roomId);
-        socket.to(roomId).emit('request-sync');
+        socket.to(roomId).emit('client-req-synced');
     });
 
     // closing the room -> admin user
